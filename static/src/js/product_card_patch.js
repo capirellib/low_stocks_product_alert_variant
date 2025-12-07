@@ -65,25 +65,28 @@ patch(ProductCard.prototype, {
         
         const qty = product.qty_available || 0;
         const badge = document.createElement('span');
-        badge.className = 'stock_badge position-absolute top-0 start-0 translate-middle';
-        badge.style.cssText = 'margin-left: 20%; margin-top: 9%; padding: 1px 10px; border-radius: 5px; z-index: 10; font-size: 0.75rem;';
+        badge.className = 'stock_badge position-absolute';
+        badge.style.cssText = 'top: 5px; right: 5px; padding: 2px 8px; border-radius: 12px; z-index: 5; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
         
-        // Asegurar que el contenedor tenga position relative
+        // Asegurar que el contenedor tenga position relative y overflow visible
         container.style.position = 'relative';
+        container.style.overflow = 'visible';
         
         const icon = document.createElement('i');
         icon.className = 'fa';
-        icon.style.paddingRight = '5px';
+        icon.style.paddingRight = '3px';
         
         if (product.alert_tag && product.alert_tag !== false) {
             // Producto con alerta de bajo stock (rojo)
-            badge.style.backgroundColor = '#ffcccc';
-            icon.className += ' fa-warning text-danger';
+            badge.style.backgroundColor = '#dc3545';
+            badge.style.color = '#fff';
+            icon.className += ' fa-exclamation-triangle';
             console.log('⚠️ [Alert] Badge agregado:', product.display_name || product.name, 'Stock:', qty);
         } else {
             // Producto con stock suficiente (verde)
-            badge.style.backgroundColor = '#ccffcc';
-            icon.className += ' fa-check text-success';
+            badge.style.backgroundColor = '#28a745';
+            badge.style.color = '#fff';
+            icon.className += ' fa-check-circle';
             console.log('✅ [Stock OK] Badge agregado:', product.display_name || product.name, 'Stock:', qty);
         }
         
