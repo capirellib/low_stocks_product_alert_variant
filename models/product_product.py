@@ -51,10 +51,13 @@ class ProductProduct(models.Model):
 
     @api.model
     def _load_pos_data_fields(self, config_id):
-        """Asegurar que alert_tag se cargue en el POS para variantes"""
+        """Asegurar que alert_tag y qty_available se carguen en el POS"""
         result = super()._load_pos_data_fields(config_id)
-        # alert_tag ya está agregado por low_stocks_product_alert
-        # pero nos aseguramos que esté presente
+        # Agregar campos necesarios para calcular alertas por variante
         if 'alert_tag' not in result:
             result.append('alert_tag')
+        if 'qty_available' not in result:
+            result.append('qty_available')
+        if 'is_storable' not in result:
+            result.append('is_storable')
         return result
