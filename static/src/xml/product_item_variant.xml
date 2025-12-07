@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Template para mostrar alertas de stock bajo en variantes
-         Basado en low_stocks_product_alert pero aplicado a variantes -->
+    <!-- Template idéntico a low_stocks_product_alert
+         pero con nombre diferente para asegurar que se aplique a variantes -->
     
     <t t-name="point_of_sale.low_product_stock_variant"
        t-inherit="point_of_sale.ProductCard" 
        t-inherit-mode="extension" 
        owl="1">
         <xpath expr="//div[hasclass('product-img')]" position="inside">
-            <t t-if="props.product.alert_tag">
+            <t t-if="this.props.product.alert_tag">
                 <span class="alert_tag position-absolute top-0 start-0 translate-middle"
                       style="background-color: #a1dafc; margin-left: 20%; margin-top: 9%; padding: 1px 10px; border-radius: 5px 5px 5px 5px;">
                     <i class="fa fa-warning text-danger" style="padding-right: 5px;"/>
-                    <t t-esc="props.product.alert_tag"/>
+                    <t t-esc="this.props.product.alert_tag"/>
                 </span>
             </t>
         </xpath>
