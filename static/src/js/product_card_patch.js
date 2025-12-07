@@ -143,11 +143,12 @@ patch(ProductCard.prototype, {
         const availableQty = this.getAvailableStock();
         const badge = document.createElement('span');
         badge.className = 'stock_badge position-absolute';
-        badge.style.cssText = 'top: 5px; right: 5px; padding: 2px 8px; border-radius: 12px; z-index: 5; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
+        badge.style.cssText = 'top: 5px; left: 5px; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
         
-        // Asegurar que el contenedor tenga position relative y overflow visible
-        container.style.position = 'relative';
-        container.style.overflow = 'visible';
+        // Asegurar que el contenedor tenga position relative pero NO cambiar overflow
+        if (!container.style.position || container.style.position === 'static') {
+            container.style.position = 'relative';
+        }
         
         const icon = document.createElement('i');
         icon.className = 'fa';
