@@ -15,6 +15,7 @@ patch(ProductCard.prototype, {
         
         // Suscribirse a cambios en el pedido
         this._updateBadgeListener = () => {
+            console.log('🔔 [Badge Update] Listener disparado para:', this.props.product?.name);
             setTimeout(() => this.updateBadgeStock(), 0);
         };
         
@@ -67,21 +68,35 @@ patch(ProductCard.prototype, {
     updateBadgeStock() {
         const product = this.props.product;
         
+        console.log('🔄 [Update Badge] Iniciando actualización para:', product.display_name || product.name);
+        
         if (product.is_storable === false) {
+            console.log('⏭️ [Update Badge] Producto no almacenable, saliendo');
             return;
         }
 
         // Solo actualizar si las variantes se muestran como productos independientes
         const config = this.pos?.config;
         if (!config?.show_variants_as_products) {
+            console.log('⏭️ [Update Badge] Variantes no mostradas independientemente, saliendo');
             return;
         }
         
         const rootEl = this.el || this.__owl__?.bdom?.el;
-        if (!rootEl) return;
+        if (!rootEl) {
+            console.log('❌ [Update Badge] No hay rootEl');
+            return;
+        }
         
         const availableQty = this.getAvailableStock();
         const hasAlert = availableQty <= 0 || product.alert_tag;
+        
+        console.log('📊 [Update Badge] Estado:', {
+            producto: product.display_name,
+            availableQty,
+            hasAlert,
+            alert_tag: product.alert_tag
+        });
         
         const badge = rootEl.querySelector('.stock_badge');
         
