@@ -2,15 +2,22 @@
 
 import { patch } from "@web/core/utils/patch";
 import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
-import { onPatched } from "@odoo/owl";
+import { onMounted, onPatched } from "@odoo/owl";
 
 console.log("🔥 [low_stocks_product_alert_variant] product_card_patch.js cargado");
 
 patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
+        console.log("🔧 [Stock Badge] Setup ejecutado para producto:", this.props.product?.name);
+        
+        onMounted(() => {
+            console.log("🎯 [Stock Badge] onMounted - producto:", this.props.product?.name);
+            this.addAlertBadge();
+        });
         
         onPatched(() => {
+            console.log("🔄 [Stock Badge] onPatched - producto:", this.props.product?.name);
             this.addAlertBadge();
         });
     },
