@@ -60,7 +60,6 @@
             # "low_stocks_product_alert_variant/static/src/xml/product_item_variant.xml",
             "low_stocks_product_alert_variant/static/src/css/variant_alert.css",
             "low_stocks_product_alert_variant/static/src/js/product_card_patch.js",
-            "low_stocks_product_alert_variant/static/src/js/debug_variant_alert.js",
         ],
     },
     "images": ["static/description/icon.png"],

@@ -11,46 +11,16 @@ patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
         this.pos = useService("pos");
-        console.log("🔧 [Stock Badge] Setup ejecutado para producto:", this.props.product?.name);
-        
-        // Suscribirse a cambios en el pedido
-        this._updateBadgeListener = () => {
-            console.log('🔔 [Badge Update] Listener disparado para:', this.props.product?.name);
-            setTimeout(() => this.updateBadgeStock(), 0);
-        };
         
         // Usar onMounted con setTimeout para dar tiempo al DOM
         onMounted(() => {
-            setTimeout(() => {
-                console.log("🎯 [Stock Badge] onMounted delayed - producto:", this.props.product?.name);
-                this.addAlertBadge();
-                
-                // Escuchar cambios en el carrito
-                const order = this.pos?.get_order?.();
-                console.log('🔍 [Listener Check] Order:', order, 'Orderlines:', order?.orderlines);
-                if (order && order.orderlines) {
-                    order.orderlines.on('add remove change', this._updateBadgeListener, this);
-                    console.log('✅ [Listener] Registrado para producto:', this.props.product?.name);
-                } else {
-                    console.warn('❌ [Listener] NO se pudo registrar para:', this.props.product?.name);
-                }
-            }, 0);
+            setTimeout(() => this.addAlertBadge(), 0);
         });
         
-        // También usar onPatched por si acaso
+        // onPatched se ejecuta cuando el componente se re-renderiza
+        // Esto captura cambios del carrito porque OWL re-renderiza la vista
         onPatched(() => {
-            console.log("🔄 [Stock Badge] onPatched - producto:", this.props.product?.name);
-            // Forzar actualización del badge en cada patch (cuando cambia el carrito)
             setTimeout(() => this.updateBadgeStock(), 0);
-        });
-        
-        onWillUnmount(() => {
-            // Limpiar el listener del carrito
-            const order = this.pos?.get_order?.();
-            if (order && order.orderlines) {
-                order.orderlines.off('add remove change', this._updateBadgeListener, this);
-                console.log('🧹 [Listener] Limpiado para producto:', this.props.product?.name);
-            }
         });
     },
     
@@ -65,7 +35,6 @@ patch(ProductCard.prototype, {
                 return line.product.id === product.id ? total + line.quantity : total;
             }, 0);
             availableQty -= qtyInCart;
-            console.log(`📊 [Stock Calc] ${product.display_name}: qty_available=${product.qty_available}, en_carrito=${qtyInCart}, disponible=${availableQty}`);
         }
         
         return availableQty;
@@ -74,35 +43,24 @@ patch(ProductCard.prototype, {
     updateBadgeStock() {
         const product = this.props.product;
         
-        console.log('🔄 [Update Badge] Iniciando actualización para:', product.display_name || product.name);
-        
+        // Salir rápidamente si no es almacenable
         if (product.is_storable === false) {
-            console.log('⏭️ [Update Badge] Producto no almacenable, saliendo');
             return;
         }
 
         // Solo actualizar si las variantes se muestran como productos independientes
         const config = this.pos?.config;
         if (!config?.show_variants_as_products) {
-            console.log('⏭️ [Update Badge] Variantes no mostradas independientemente, saliendo');
             return;
         }
         
         const rootEl = this.el || this.__owl__?.bdom?.el;
         if (!rootEl) {
-            console.log('❌ [Update Badge] No hay rootEl');
             return;
         }
         
         const availableQty = this.getAvailableStock();
         const hasAlert = availableQty <= 0 || product.alert_tag;
-        
-        console.log('📊 [Update Badge] Estado:', {
-            producto: product.display_name,
-            availableQty,
-            hasAlert,
-            alert_tag: product.alert_tag
-        });
         
         const badge = rootEl.querySelector('.stock_badge');
         
@@ -118,11 +76,15 @@ patch(ProductCard.prototype, {
             return;
         }
         
-        // Si no tiene alerta y existe badge, actualizar la cantidad
+        // Si no tiene alerta y existe badge, actualizar solo si cambió
         if (!hasAlert && badge) {
             const qtyText = badge.querySelector('.qty-text');
             if (qtyText) {
-                qtyText.textContent = availableQty.toString();
+                const newQtyStr = availableQty.toString();
+                if (qtyText.textContent !== newQtyStr) {
+                    qtyText.textContent = newQtyStr;
+                    console.log('✅ [Badge Update]', product.display_name, '→', newQtyStr);
+                }
             }
         }
     },
