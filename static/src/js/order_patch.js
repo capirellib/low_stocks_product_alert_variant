@@ -1,14 +1,19 @@
 /** @odoo-module **/
 
-import { PosStore } from "@point_of_sale/app/services/pos_store";
+import { Orderline } from "@point_of_sale/app/generic_components/orderline/orderline";
 import { patch } from "@web/core/utils/patch";
+import { useService } from "@web/core/utils/hooks";
+import { onMounted } from "@odoo/owl";
 
 console.log("🔥 [low_stocks_product_alert_variant] order_patch.js cargado");
 
 const CART_STORAGE_KEY = 'pos_variant_cart_quantities';
 
-// Actualizar localStorage con cantidades del carrito
-function updateCartStorage(order) {
+// Actualizar localStorage con todas las cantidades del carrito
+function updateCartStorage(pos) {
+    if (!pos) return;
+    
+    const order = pos.get_order();
     if (!order || !order.lines) {
         return;
     }
@@ -30,28 +35,17 @@ function updateCartStorage(order) {
     }
 }
 
-patch(PosStore.prototype, {
-    // Cuando se agrega una línea al pedido
-    async addLineToCurrentOrder(vals, opts) {
-        const result = await super.addLineToCurrentOrder(...arguments);
-        console.log('➕ [Order Patch] Línea agregada al pedido');
-        const order = this.get_order();
-        if (order) {
-            updateCartStorage(order);
-        }
-        return result;
-    },
-    
-    // Cuando se cambia la cantidad de una línea
-    async setQuantityLineToCurrentOrder(line, quantity) {
-        const result = await super.setQuantityLineToCurrentOrder?.(...arguments);
-        console.log('🔢 [Order Patch] Cantidad cambiada');
-        const order = this.get_order();
-        if (order) {
-            updateCartStorage(order);
-        }
-        return result;
+patch(Orderline.prototype, {
+    setup() {
+        super.setup(...arguments);
+        this.pos = useService("pos");
+        
+        // Actualizar cuando se monta una nueva línea
+        onMounted(() => {
+            console.log('➕ [Orderline] Nueva línea montada');
+            updateCartStorage(this.pos);
+        });
     },
 });
 
-console.log("✅ [low_stocks_product_alert_variant] PosStore patch aplicado");
+console.log("✅ [low_stocks_product_alert_variant] Orderline patch aplicado");
