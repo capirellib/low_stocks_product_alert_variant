@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Heredar vista de product.product para agregar campos de variante -->
+    <record id="view_product_product_form_inherit_variant_alert" model="ir.ui.view">
+        <field name="name">product.product.form.variant.alert</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//group[@name='group_general']" position="after">
+                <group string="Low Stock Alert (Variant Specific)" name="variant_stock_alert">
+                    <field name="low_stock_alert_variant"/>
+                    <field name="variant_stock_threshold" 
+                           attrs="{'invisible': [('low_stock_alert_variant', '=', False)]}"/>
+                    <field name="is_low_stock_variant" readonly="1" 
+                           attrs="{'invisible': [('low_stock_alert_variant', '=', False)]}"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista tree para product.product con alerta de stock -->
+    <record id="view_product_product_tree_inherit_variant_alert" model="ir.ui.view">
+        <field name="name">product.product.tree.variant.alert</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qty_available']" position="after">
+                <field name="is_low_stock_variant" invisible="1"/>
+                <field name="low_stock_alert_variant" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

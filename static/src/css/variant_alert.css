@@ -1,0 +1,41 @@
+/* Low Stock Alert - Variant Support */
+
+.low-stock-variant-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: #ff6b6b;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.product-card.low-stock-variant {
+    border: 2px solid #ff6b6b !important;
+    opacity: 0.85;
+}
+
+.product-card.low-stock-variant::before {
+    content: "⚠️";
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    font-size: 24px;
+    z-index: 11;
+}
+
+.variant-stock-info {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    background: rgba(255, 107, 107, 0.9);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: bold;
+}
