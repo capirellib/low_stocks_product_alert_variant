@@ -58,26 +58,7 @@ patch(ProductCard.prototype, {
                 return line.product.id === product.id ? total + line.quantity : total;
             }, 0);
             availableQty -= qtyInCart;
-        }
-        
-        // Restar cantidades de órdenes validadas pero no sincronizadas
-        const db = this.pos?.db;
-        if (db && db.get_orders) {
-            const pendingOrders = db.get_orders() || [];
-            const qtyInPendingOrders = pendingOrders.reduce((total, pendingOrder) => {
-                if (pendingOrder.data && pendingOrder.data.lines) {
-                    return total + pendingOrder.data.lines.reduce((lineTotal, line) => {
-                        // line es un array: [0, 0, {product_id: X, qty: Y, ...}]
-                        const lineData = line[2];
-                        if (lineData && lineData.product_id === product.id) {
-                            return lineTotal + (lineData.qty || 0);
-                        }
-                        return lineTotal;
-                    }, 0);
-                }
-                return total;
-            }, 0);
-            availableQty -= qtyInPendingOrders;
+            console.log(`📊 [Stock Calc] ${product.display_name}: qty_available=${product.qty_available}, en_carrito=${qtyInCart}, disponible=${availableQty}`);
         }
         
         return availableQty;
