@@ -1,37 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<templates id="template" xml:space="preserve">
+<odoo>
+    <!-- Template para mostrar alertas de stock en variantes individuales
+         Hereda del mismo template que low_stocks_product_alert (ProductCard)
+         Solo se aplica cuando las variantes se muestran como productos 
+         independientes -->
     
-    <!-- Override del template de producto para mostrar alerta de stock por variante -->
-    <t t-name="low_stocks_product_alert_variant.ProductItem" t-inherit="point_of_sale.ProductItem" t-inherit-mode="extension">
-        
-        <!-- Agregar badge de stock bajo para variantes -->
-        <xpath expr="//div[hasclass('product-img')]" position="inside">
-            <t t-if="props.product.is_low_stock_variant">
-                <div class="low-stock-variant-badge">
-                    ⚠️ Stock Bajo
-                </div>
+    <t t-name="point_of_sale.low_product_stock_variant"
+       t-inherit="point_of_sale.ProductCard" 
+       t-inherit-mode="extension" 
+       owl="1">
+        <!-- El template base ya maneja alert_tag, solo necesitamos asegurar
+             que funcione correctamente para variantes -->\n        <xpath expr="//div[hasclass('product-img')]" position="inside">
+            <t t-if="this.props.product.alert_tag">
+                <!-- Este xpath se ejecutará después del template base
+                     Asegura que alert_tag funcione para variantes -->
             </t>
         </xpath>
-
-        <!-- Agregar clase CSS si tiene stock bajo -->
-        <xpath expr="//div[hasclass('product-card')]" position="attributes">
-            <attribute name="t-att-class">
-                {
-                    'product-card': true,
-                    'low-stock-variant': props.product.is_low_stock_variant
-                }
-            </attribute>
-        </xpath>
-
-        <!-- Mostrar cantidad disponible -->
-        <xpath expr="//div[hasclass('product-name')]" position="after">
-            <t t-if="props.product.low_stock_alert_enabled">
-                <div class="variant-stock-info">
-                    Stock: <t t-esc="props.product.qty_available"/>
-                </div>
-            </t>
-        </xpath>
-
     </t>
 
-</templates>
+</odoo>

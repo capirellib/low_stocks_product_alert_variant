@@ -1,59 +1,50 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import api, models
 
 
 class ProductProduct(models.Model):
-    """Extiende product.product para alertas de stock por variante"""
+    """Extiende product.product para alertas de stock por variante
+    
+    Hereda de low_stocks_product_alert y modifica el cálculo de alert_tag
+    para que funcione por variante individual cuando las variantes se muestran
+    como productos independientes en el POS.
+    """
 
     _inherit = "product.product"
 
-    low_stock_alert_variant = fields.Boolean(
-        string="Alert on Low Stock (Variant)",
-        help="Show alert when this specific variant has low stock",
-        default=False,
-    )
-
-    variant_stock_threshold = fields.Float(
-        string="Variant Stock Threshold",
-        help="Minimum stock quantity for this variant before alert",
-        default=0.0,
-    )
-
-    @api.depends("qty_available", "variant_stock_threshold")
-    def _compute_is_low_stock_variant(self):
-        """Calcula si la variante tiene stock bajo"""
-        for product in self:
-            if product.low_stock_alert_variant and product.variant_stock_threshold > 0:
-                product.is_low_stock_variant = (
-                    product.qty_available <= product.variant_stock_threshold
+    @api.depends('qty_available')
+    def _compute_alert_tag(self):
+        """Override: Calcula alert_tag considerando variantes individuales
+        
+        Solo aplica cuando el módulo pos_product_variants_extended está
+        activo y las variantes se muestran como productos independientes.
+        """
+        # Verificar si la configuración global de alertas está activa
+        stock_alert = self.env['ir.config_parameter'].sudo().get_param(
+            'low_stocks_product_alert.is_low_stock_alert')
+        
+        # Verificar si las variantes se muestran independientemente
+        show_variants = self.env['ir.config_parameter'].sudo().get_param(
+            'pos_product_variants_extended.show_variants_as_products',
+            default=False)
+        
+        for rec in self:
+            if stock_alert and show_variants:
+                # Obtener el umbral mínimo configurado globalmente
+                min_stock = int(
+                    self.env['ir.config_parameter'].sudo().get_param(
+                        'low_stocks_product_alert.min_low_stock_alert',
+                        default=0))
+                
+                # Calcular si esta variante tiene stock bajo
+                is_low_stock = (
+                    rec.is_storable and
+                    rec.qty_available <= min_stock
                 )
+                
+                # Asignar el tag con la cantidad disponible si hay stock bajo
+                rec.alert_tag = rec.qty_available if is_low_stock else False
             else:
-                # Heredar del template si no está configurado
-                product.is_low_stock_variant = (
-                    product.product_tmpl_id.low_stock_alert
-                    and product.qty_available <= product.product_tmpl_id.stock_threshold
-                )
-
-    is_low_stock_variant = fields.Boolean(
-        string="Is Low Stock (Variant)",
-        compute="_compute_is_low_stock_variant",
-        store=True,
-        help="Technical field indicating if this variant has low stock",
-    )
-
-    def _get_stock_info_for_pos(self):
-        """
-        Retorna información de stock para el POS
-        Override para incluir información específica de variante
-        """
-        self.ensure_one()
-        return {
-            "product_id": self.id,
-            "display_name": self.display_name,
-            "qty_available": self.qty_available,
-            "is_low_stock": self.is_low_stock_variant,
-            "stock_threshold": self.variant_stock_threshold
-            or self.product_tmpl_id.stock_threshold,
-            "low_stock_alert_enabled": self.low_stock_alert_variant
-            or self.product_tmpl_id.low_stock_alert,
-        }
+                # Si no se muestran variantes independientes,
+                # usar lógica del padre
+                super(ProductProduct, rec)._compute_alert_tag()

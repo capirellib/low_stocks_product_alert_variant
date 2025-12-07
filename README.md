@@ -2,18 +2,26 @@
 
 ## Descripción
 
-Módulo que extiende `low_stocks_product_alert` para proporcionar alertas de stock bajo específicas por variante de producto en Odoo 18.
+Módulo que extiende `low_stocks_product_alert` para mostrar alertas de 
+stock bajo en variantes individuales de productos en Odoo 18.
+
+**IMPORTANTE:** Este módulo solo funciona cuando las variantes se muestran 
+como productos independientes (módulo `pos_product_variants_extended` activo).
 
 ## Características
 
-- **Alertas por Variante**: Cada variante puede tener su propio umbral de stock bajo
-- **Integración con POS**: Muestra alertas visuales en el punto de venta
-- **Compatible con Variantes Extendidas**: Funciona con `pos_product_variants_extended`
-- **Configuración Flexible**: Hereda configuración del template o usa configuración específica
+- **Alertas por Variante Individual**: Cada variante muestra su propio 
+  stock y alerta
+- **Herencia del Módulo Base**: Usa el campo `alert_tag` existente en 
+  `low_stocks_product_alert`
+- **Activación Condicional**: Solo aplica cuando las variantes se muestran 
+  independientemente
+- **Integración con POS**: Muestra alertas visuales heredadas del módulo base
+- **Sin Campos Adicionales**: Usa la infraestructura existente
 
 ## Dependencias
 
-- `low_stocks_product_alert`
+- `low_stocks_product_alert` (Cybrosys Technologies)
 - `pos_product_variants_extended`
 - `product`
 - `point_of_sale`
@@ -21,42 +29,67 @@ Módulo que extiende `low_stocks_product_alert` para proporcionar alertas de sto
 
 ## Instalación
 
-1. Copiar el módulo a la carpeta de addons
-2. Actualizar lista de aplicaciones en Odoo
-3. Instalar "Product Low Stock Alert - Variant Support"
+1. Asegúrate de tener instalado `low_stocks_product_alert`
+2. Asegúrate de tener instalado `pos_product_variants_extended`
+3. Copiar el módulo a la carpeta de addons
+4. Actualizar lista de aplicaciones en Odoo
+5. Instalar "Product Low Stock Alert - Variant Support"
 
 ## Configuración
 
-### Por Variante
+### Activar Alertas de Stock Bajo
 
-1. Ir a **Inventario > Productos > Productos**
-2. Seleccionar una variante específica
-3. En la pestaña "Low Stock Alert (Variant Specific)":
-   - Activar "Alert on Low Stock (Variant)"
-   - Configurar "Variant Stock Threshold"
+1. Ir a **POS > Configuración > Ajustes**
+2. Activar "Low Stock Alert"
+3. Configurar "Minimum Low Stock Alert" (umbral global)
 
-### Herencia del Template
+### Activar Variantes como Productos Independientes
 
-Si no se configura específicamente, la variante hereda:
+1. Ir a **POS > Configuración > Ajustes**
+2. Activar "Show Variants as Products"
 
-- `low_stock_alert` del template padre
-- `stock_threshold` del template padre
+## Funcionamiento
+
+### Cuando las Variantes se Muestran Independientemente
+
+El módulo override el método `_compute_alert_tag()` para:
+
+1. Verificar si las alertas globales están activas
+2. Verificar si las variantes se muestran como productos independientes
+3. Calcular `alert_tag` por cada variante (no por template)
+4. Mostrar la cantidad disponible en el badge de alerta
+
+### Cuando las Variantes NO se Muestran Independientemente
+
+El módulo delega al comportamiento del módulo base 
+`low_stocks_product_alert`, calculando alertas por template.
 
 ## Uso en POS
 
-Las variantes con stock bajo mostrarán:
+Las variantes con stock bajo mostrarán (heredado de 
+`low_stocks_product_alert`):
 
-- 🔴 Badge "⚠️ Stock Bajo" en la esquina superior derecha
-- 🟠 Borde rojo alrededor de la tarjeta de producto
-- 📊 Información de stock disponible en la parte inferior
+- 🔴 Badge con icono de advertencia y cantidad disponible
+- 📊 Fondo azul claro (`#a1dafc`)
+- ⚠️ Icono de advertencia en rojo
 
 ## Campos Técnicos
 
 ### product.product
 
-- `low_stock_alert_variant`: Boolean - Activar alerta para esta variante
-- `variant_stock_threshold`: Float - Umbral de stock para esta variante
-- `is_low_stock_variant`: Boolean (computed) - Indica si tiene stock bajo
+- `alert_tag`: Char (heredado de `low_stocks_product_alert`) - 
+  Muestra cantidad si hay stock bajo
+
+## Implementación Técnica
+
+```python
+@api.depends('qty_available')
+def _compute_alert_tag(self):
+    # Override que verifica:
+    # 1. Alertas globales activas
+    # 2. Variantes mostradas independientemente
+    # 3. Calcula por variante o delega al padre
+```
 
 ## Autor
 

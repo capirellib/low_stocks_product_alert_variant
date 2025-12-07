@@ -23,21 +23,22 @@
     "name": "Product Low Stock Alert - Variant Support",
     "version": "18.0.1.0.0",
     "category": "Warehouse,Point of Sale",
-    "summary": """Extiende Product Low Stock Alert para soportar variantes 
-    de producto mostradas individualmente en el POS""",
+    "summary": """Extiende Product Low Stock Alert para mostrar alertas
+    por variantes individuales en el POS""",
     "description": """
     Módulo que extiende low_stocks_product_alert para:
     - Mostrar alertas de stock bajo por variante individual
-    - Integración con pos_product_variants_extended
-    - Alertas específicas por variante en lugar de por template
-    - Visualización mejorada de stock por variante en POS
-    
+    - Funciona SOLO cuando las variantes se muestran como productos
+      independientes (pos_product_variants_extended activo)
+    - Usa el mismo campo alert_tag del módulo base
+    - Calcula stock individualmente por variante en lugar de por template
+    - Compatible con la arquitectura OWL de Odoo 18
+
     Características técnicas:
-    * Hereda de low_stocks_product_alert
-    * Compatible con pos_product_variants_extended
-    * Calcula stock individualmente por variante
-    * Alertas visuales por cada variante en POS
-    * Compatible con arquitectura OWL de Odoo 18
+    * Override del método _compute_alert_tag() de product.product
+    * Verifica configuración de pos_product_variants_extended
+    * Hereda visualización del módulo base low_stocks_product_alert
+    * Sin campos adicionales, usa infraestructura existente
     """,
     "author": "Betta ERP - Corrientes, Argentina",
     "company": "Betta ERP",
@@ -56,8 +57,14 @@
     ],
     "assets": {
         "point_of_sale.assets": [
-            "low_stocks_product_alert_variant/static/src/xml/product_item_variant.xml",
-            "low_stocks_product_alert_variant/static/src/css/variant_alert.css",
+            (
+                "low_stocks_product_alert_variant/static/src/xml/"
+                "product_item_variant.xml"
+            ),
+            (
+                "low_stocks_product_alert_variant/static/src/css/"
+                "variant_alert.css"
+            ),
         ],
     },
     "images": ["static/description/icon.png"],
