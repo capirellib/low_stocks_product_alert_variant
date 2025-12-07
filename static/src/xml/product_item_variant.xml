@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Este archivo está presente para asegurar que los assets se carguen
-         correctamente. El template base 'point_of_sale.low_product_stock'
-         ya maneja la visualización de alert_tag para variantes.
-         
-         El cálculo de alert_tag por variante se hace en el modelo Python,
-         no se necesita template XML adicional. -->
+    <!-- Hereda del template base de low_stocks_product_alert
+         para asegurar que funcione con variantes individuales -->
+    
+    <t t-name="point_of_sale.low_product_stock_variant"
+       t-inherit="point_of_sale.low_product_stock" 
+       t-inherit-mode="extension" 
+       owl="1">
+        <!-- El template base ya maneja la visualización correctamente.
+             Este template simplemente asegura que se aplique a variantes. -->
+    </t>
+
 </odoo>
