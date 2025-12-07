@@ -3,12 +3,24 @@
    Solo aplica cuando las variantes se muestran como productos 
    independientes */
 
-/* Los estilos del alert_tag ya están definidos en low_stocks_product_alert
-   Este archivo queda disponible para personalizaciones adicionales 
-   específicas de variantes */
+/* Asegurar que el nombre del producto siempre sea visible */
+.product-card .product-name,
+.product-card .product-content h6,
+.product-card .product-content .product-name {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
 
-/* Ejemplo: Personalización adicional para variantes si se necesita */
-.product-card .alert_tag {
-    /* Los estilos base ya están aplicados desde 
-       low_stocks_product_alert */
+/* Asegurar que el contenedor de la imagen no oculte contenido */
+.product-card .product-img {
+    overflow: visible !important;
+}
+
+/* Badge de stock en la parte inferior izquierda */
+.stock_badge {
+    pointer-events: none;
 }

@@ -148,12 +148,6 @@ patch(ProductCard.prototype, {
         if (container.querySelector('.stock_badge')) {
             return;
         }
-
-        // Ocultar el badge original del módulo padre si existe
-        const originalBadge = container.querySelector('.position-absolute.top-0.start-0');
-        if (originalBadge) {
-            originalBadge.style.display = 'none';
-        }
         
         const availableQty = this.getAvailableStock();
         
