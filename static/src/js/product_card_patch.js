@@ -29,6 +29,11 @@ patch(ProductCard.prototype, {
                 if (order && order.orderlines) {
                     order.orderlines.on('add remove change', null, this._updateBadgeListener);
                 }
+                
+                // Escuchar cuando se valida una orden (para actualizar stock)
+                if (this.pos) {
+                    this.pos.on('change:selectedOrder', this._updateBadgeListener, this);
+                }
             }, 0);
         });
         
@@ -39,10 +44,15 @@ patch(ProductCard.prototype, {
         });
         
         onWillUnmount(() => {
-            // Limpiar el listener
+            // Limpiar el listener del carrito
             const order = this.pos?.get_order?.();
             if (order && order.orderlines) {
                 order.orderlines.off('add remove change', null, this._updateBadgeListener);
+            }
+            
+            // Limpiar listener de cambio de orden
+            if (this.pos) {
+                this.pos.off('change:selectedOrder', this._updateBadgeListener, this);
             }
         });
     },
@@ -58,6 +68,26 @@ patch(ProductCard.prototype, {
                 return line.product.id === product.id ? total + line.quantity : total;
             }, 0);
             availableQty -= qtyInCart;
+        }
+        
+        // Restar cantidades de órdenes validadas pero no sincronizadas
+        const db = this.pos?.db;
+        if (db && db.get_orders) {
+            const pendingOrders = db.get_orders() || [];
+            const qtyInPendingOrders = pendingOrders.reduce((total, pendingOrder) => {
+                if (pendingOrder.data && pendingOrder.data.lines) {
+                    return total + pendingOrder.data.lines.reduce((lineTotal, line) => {
+                        // line es un array: [0, 0, {product_id: X, qty: Y, ...}]
+                        const lineData = line[2];
+                        if (lineData && lineData.product_id === product.id) {
+                            return lineTotal + (lineData.qty || 0);
+                        }
+                        return lineTotal;
+                    }, 0);
+                }
+                return total;
+            }, 0);
+            availableQty -= qtyInPendingOrders;
         }
         
         return availableQty;
