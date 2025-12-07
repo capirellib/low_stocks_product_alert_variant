@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Order } from "@point_of_sale/app/store/models";
+import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { patch } from "@web/core/utils/patch";
 
 console.log("🔥 [low_stocks_product_alert_variant] order_patch.js cargado");
@@ -30,45 +30,28 @@ function updateCartStorage(order) {
     }
 }
 
-patch(Order.prototype, {
-    setup() {
-        super.setup(...arguments);
-        console.log('🔧 [Order Patch] Setup ejecutado');
-    },
-    
-    add_orderline(line) {
-        const result = super.add_orderline(...arguments);
-        console.log('➕ [Order Patch] Línea agregada');
-        updateCartStorage(this);
+patch(PosStore.prototype, {
+    // Cuando se agrega una línea al pedido
+    async addLineToCurrentOrder(vals, opts) {
+        const result = await super.addLineToCurrentOrder(...arguments);
+        console.log('➕ [Order Patch] Línea agregada al pedido');
+        const order = this.get_order();
+        if (order) {
+            updateCartStorage(order);
+        }
         return result;
     },
     
-    remove_orderline(line) {
-        const result = super.remove_orderline(...arguments);
-        console.log('➖ [Order Patch] Línea removida');
-        updateCartStorage(this);
-        return result;
-    },
-    
-    set_quantity(line, quantity) {
-        const result = super.set_quantity?.(...arguments);
+    // Cuando se cambia la cantidad de una línea
+    async setQuantityLineToCurrentOrder(line, quantity) {
+        const result = await super.setQuantityLineToCurrentOrder?.(...arguments);
         console.log('🔢 [Order Patch] Cantidad cambiada');
-        updateCartStorage(this);
-        return result;
-    },
-    
-    // Cuando se finaliza/valida el pedido, limpiar el carrito
-    export_for_printing() {
-        const result = super.export_for_printing(...arguments);
-        console.log('📋 [Order Patch] Pedido exportado para impresión');
-        // Limpiar localStorage cuando se valida el pedido
-        setTimeout(() => {
-            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({}));
-            window.dispatchEvent(new CustomEvent('pos_cart_updated', { detail: {} }));
-            console.log('🧹 [Cart Storage] Limpiado después de validación');
-        }, 1000);
+        const order = this.get_order();
+        if (order) {
+            updateCartStorage(order);
+        }
         return result;
     },
 });
 
-console.log("✅ [low_stocks_product_alert_variant] Order patch aplicado");
+console.log("✅ [low_stocks_product_alert_variant] PosStore patch aplicado");
