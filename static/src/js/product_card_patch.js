@@ -2,16 +2,24 @@
 
 import { patch } from "@web/core/utils/patch";
 import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
-import { onPatched, useRef } from "@odoo/owl";
+import { onMounted, onPatched } from "@odoo/owl";
 
 console.log("🔥 [low_stocks_product_alert_variant] product_card_patch.js cargado");
 
 patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
-        this.root = useRef("root");
         console.log("🔧 [Stock Badge] Setup ejecutado para producto:", this.props.product?.name);
         
+        // Usar onMounted con setTimeout para dar tiempo al DOM
+        onMounted(() => {
+            setTimeout(() => {
+                console.log("🎯 [Stock Badge] onMounted delayed - producto:", this.props.product?.name);
+                this.addAlertBadge();
+            }, 0);
+        });
+        
+        // También usar onPatched por si acaso
         onPatched(() => {
             console.log("🔄 [Stock Badge] onPatched - producto:", this.props.product?.name);
             this.addAlertBadge();
@@ -26,8 +34,8 @@ patch(ProductCard.prototype, {
             return;
         }
         
-        // Usar this.root.el en lugar de this.el
-        const rootEl = this.root?.el || this.el;
+        // Intentar obtener el elemento de varias formas
+        const rootEl = this.el || this.__owl__?.bdom?.el || document.querySelector(`[data-product-id="${product.id}"]`);
         
         if (!rootEl) {
             console.warn('❌ [Stock Badge] No hay elemento raíz para:', product.display_name || product.name);
@@ -37,10 +45,10 @@ patch(ProductCard.prototype, {
         console.log('🔍 [DOM Debug] Elemento encontrado para:', product.display_name || product.name);
         
         // Buscar el contenedor
-        let container = rootEl.querySelector('.product-img');
-        if (!container) container = rootEl.querySelector('.product-card');
-        if (!container) container = rootEl.querySelector('img')?.parentElement;
-        if (!container && rootEl.classList.contains('product-card')) {
+        let container = rootEl.querySelector?.('.product-img');
+        if (!container) container = rootEl.querySelector?.('.product-card');
+        if (!container) container = rootEl.querySelector?.('img')?.parentElement;
+        if (!container && rootEl.classList?.contains('product-card')) {
             container = rootEl;
         }
         if (!container) container = rootEl; // Usar el elemento raíz como último recurso
