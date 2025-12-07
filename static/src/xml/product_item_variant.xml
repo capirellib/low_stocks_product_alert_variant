@@ -1,21 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Template para mostrar alertas de stock en variantes individuales
-         Hereda del mismo template que low_stocks_product_alert (ProductCard)
-         Solo se aplica cuando las variantes se muestran como productos 
-         independientes -->
-    
-    <t t-name="point_of_sale.low_product_stock_variant"
-       t-inherit="point_of_sale.ProductCard" 
-       t-inherit-mode="extension" 
-       owl="1">
-        <!-- El template base ya maneja alert_tag, solo necesitamos asegurar
-             que funcione correctamente para variantes -->\n        <xpath expr="//div[hasclass('product-img')]" position="inside">
-            <t t-if="this.props.product.alert_tag">
-                <!-- Este xpath se ejecutará después del template base
-                     Asegura que alert_tag funcione para variantes -->
-            </t>
-        </xpath>
-    </t>
-
+    <!-- Este archivo está presente para asegurar que los assets se carguen
+         correctamente. El template base 'point_of_sale.low_product_stock'
+         ya maneja la visualización de alert_tag para variantes.
+         
+         El cálculo de alert_tag por variante se hace en el modelo Python,
+         no se necesita template XML adicional. -->
 </odoo>

@@ -28,8 +28,9 @@ class ProductProduct(models.Model):
             'pos_product_variants_extended.show_variants_as_products',
             default=False)
         
-        for rec in self:
-            if stock_alert and show_variants:
+        if stock_alert and show_variants:
+            # Modo variantes: calcular por cada variante individual
+            for rec in self:
                 # Obtener el umbral mínimo configurado globalmente
                 min_stock = int(
                     self.env['ir.config_parameter'].sudo().get_param(
@@ -44,7 +45,6 @@ class ProductProduct(models.Model):
                 
                 # Asignar el tag con la cantidad disponible si hay stock bajo
                 rec.alert_tag = rec.qty_available if is_low_stock else False
-            else:
-                # Si no se muestran variantes independientes,
-                # usar lógica del padre
-                super(ProductProduct, rec)._compute_alert_tag()
+        else:
+            # Modo normal: delegar al módulo padre (templates)
+            super(ProductProduct, self)._compute_alert_tag()

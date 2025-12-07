@@ -55,7 +55,7 @@
         "views/product_product_views.xml",
     ],
     "assets": {
-        "point_of_sale.assets": [
+        "point_of_sale._assets_pos": [
             (
                 "low_stocks_product_alert_variant/static/src/xml/"
                 "product_item_variant.xml"
