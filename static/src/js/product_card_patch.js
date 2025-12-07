@@ -2,16 +2,15 @@
 
 import { patch } from "@web/core/utils/patch";
 import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
-import { onMounted, useRef } from "@odoo/owl";
+import { onPatched } from "@odoo/owl";
 
 console.log("🔥 [low_stocks_product_alert_variant] product_card_patch.js cargado");
 
 patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
-        this.productImgRef = useRef("product-img");
         
-        onMounted(() => {
+        onPatched(() => {
             this.addAlertBadge();
         });
     },
@@ -19,8 +18,9 @@ patch(ProductCard.prototype, {
     addAlertBadge() {
         const product = this.props.product;
         
+        // Mostrar badge si tiene alert_tag O siempre mostrar cantidad de stock
         if (product.alert_tag && product.alert_tag !== false) {
-            const imgContainer = this.el.querySelector('.product-img');
+            const imgContainer = this.el?.querySelector('.product-img');
             
             if (imgContainer && !imgContainer.querySelector('.alert_tag')) {
                 const badge = document.createElement('span');
@@ -36,7 +36,7 @@ patch(ProductCard.prototype, {
                 
                 imgContainer.appendChild(badge);
                 
-                console.log("✅ [Alert] Badge agregado a:", product.display_name || product.name);
+                console.log("✅ [Alert] Badge agregado a:", product.display_name || product.name, "Stock:", product.qty_available);
             }
         }
     }
