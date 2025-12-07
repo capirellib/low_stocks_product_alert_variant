@@ -29,11 +29,6 @@ patch(ProductCard.prototype, {
                 if (order && order.orderlines) {
                     order.orderlines.on('add remove change', null, this._updateBadgeListener);
                 }
-                
-                // Escuchar cuando se valida una orden (para actualizar stock)
-                if (this.pos) {
-                    this.pos.on('change:selectedOrder', this._updateBadgeListener, this);
-                }
             }, 0);
         });
         
@@ -48,11 +43,6 @@ patch(ProductCard.prototype, {
             const order = this.pos?.get_order?.();
             if (order && order.orderlines) {
                 order.orderlines.off('add remove change', null, this._updateBadgeListener);
-            }
-            
-            // Limpiar listener de cambio de orden
-            if (this.pos) {
-                this.pos.off('change:selectedOrder', this._updateBadgeListener, this);
             }
         });
     },
