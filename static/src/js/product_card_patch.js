@@ -2,25 +2,53 @@
 
 import { patch } from "@web/core/utils/patch";
 import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
-import { onMounted, onPatched, onWillUnmount } from "@odoo/owl";
+import { onMounted, onWillUnmount } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
 console.log("🔥 [low_stocks_product_alert_variant] product_card_patch.js cargado");
+
+// Clave para localStorage
+const CART_STORAGE_KEY = 'pos_variant_cart_quantities';
+
+// Obtener cantidades del carrito desde localStorage
+function getCartQuantities() {
+    try {
+        const data = localStorage.getItem(CART_STORAGE_KEY);
+        return data ? JSON.parse(data) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+// Guardar cantidades en localStorage y notificar
+function saveCartQuantities(quantities) {
+    try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(quantities));
+        window.dispatchEvent(new CustomEvent('pos_cart_updated', { detail: quantities }));
+    } catch (e) {
+        console.error('Error guardando carrito:', e);
+    }
+}
 
 patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
         this.pos = useService("pos");
         
-        // Usar onMounted con setTimeout para dar tiempo al DOM
+        // Listener para actualizar badge cuando cambia el carrito
+        this._cartUpdateListener = () => {
+            this.updateBadgeStock();
+        };
+        
         onMounted(() => {
             setTimeout(() => this.addAlertBadge(), 0);
+            
+            // Escuchar cambios en el carrito
+            window.addEventListener('pos_cart_updated', this._cartUpdateListener);
         });
         
-        // onPatched se ejecuta cuando el componente se re-renderiza
-        // Esto captura cambios del carrito porque OWL re-renderiza la vista
-        onPatched(() => {
-            setTimeout(() => this.updateBadgeStock(), 0);
+        onWillUnmount(() => {
+            window.removeEventListener('pos_cart_updated', this._cartUpdateListener);
         });
     },
     
@@ -28,14 +56,10 @@ patch(ProductCard.prototype, {
         const product = this.props.product;
         let availableQty = product.qty_available || 0;
         
-        // Restar la cantidad en el carrito actual
-        const order = this.pos?.get_order?.();
-        if (order && order.orderlines && order.orderlines.models) {
-            const qtyInCart = order.orderlines.models.reduce((total, line) => {
-                return line.product.id === product.id ? total + line.quantity : total;
-            }, 0);
-            availableQty -= qtyInCart;
-        }
+        // Restar cantidad en el carrito desde localStorage
+        const cartQuantities = getCartQuantities();
+        const qtyInCart = cartQuantities[product.id] || 0;
+        availableQty -= qtyInCart;
         
         return availableQty;
     },

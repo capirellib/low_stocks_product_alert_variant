@@ -59,6 +59,7 @@
             # XML deshabilitado - interfiere con botón info del ProductCard
             # "low_stocks_product_alert_variant/static/src/xml/product_item_variant.xml",
             "low_stocks_product_alert_variant/static/src/css/variant_alert.css",
+            "low_stocks_product_alert_variant/static/src/js/order_patch.js",
             "low_stocks_product_alert_variant/static/src/js/product_card_patch.js",
         ],
     },
