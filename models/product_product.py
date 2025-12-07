@@ -48,3 +48,13 @@ class ProductProduct(models.Model):
         else:
             # Modo normal: delegar al módulo padre (templates)
             super(ProductProduct, self)._compute_alert_tag()
+
+    @api.model
+    def _load_pos_data_fields(self, config_id):
+        """Asegurar que alert_tag se cargue en el POS para variantes"""
+        result = super()._load_pos_data_fields(config_id)
+        # alert_tag ya está agregado por low_stocks_product_alert
+        # pero nos aseguramos que esté presente
+        if 'alert_tag' not in result:
+            result.append('alert_tag')
+        return result
