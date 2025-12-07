@@ -27,8 +27,12 @@ patch(ProductCard.prototype, {
                 
                 // Escuchar cambios en el carrito
                 const order = this.pos?.get_order?.();
+                console.log('🔍 [Listener Check] Order:', order, 'Orderlines:', order?.orderlines);
                 if (order && order.orderlines) {
-                    order.orderlines.on('add remove change', null, this._updateBadgeListener);
+                    order.orderlines.on('add remove change', this._updateBadgeListener, this);
+                    console.log('✅ [Listener] Registrado para producto:', this.props.product?.name);
+                } else {
+                    console.warn('❌ [Listener] NO se pudo registrar para:', this.props.product?.name);
                 }
             }, 0);
         });
@@ -36,14 +40,16 @@ patch(ProductCard.prototype, {
         // También usar onPatched por si acaso
         onPatched(() => {
             console.log("🔄 [Stock Badge] onPatched - producto:", this.props.product?.name);
-            this.updateBadgeStock();
+            // Forzar actualización del badge en cada patch (cuando cambia el carrito)
+            setTimeout(() => this.updateBadgeStock(), 0);
         });
         
         onWillUnmount(() => {
             // Limpiar el listener del carrito
             const order = this.pos?.get_order?.();
             if (order && order.orderlines) {
-                order.orderlines.off('add remove change', null, this._updateBadgeListener);
+                order.orderlines.off('add remove change', this._updateBadgeListener, this);
+                console.log('🧹 [Listener] Limpiado para producto:', this.props.product?.name);
             }
         });
     },
