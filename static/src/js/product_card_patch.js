@@ -17,28 +17,42 @@ patch(ProductCard.prototype, {
     
     addAlertBadge() {
         const product = this.props.product;
+        const imgContainer = this.el?.querySelector('.product-img');
         
-        // Mostrar badge si tiene alert_tag O siempre mostrar cantidad de stock
-        if (product.alert_tag && product.alert_tag !== false) {
-            const imgContainer = this.el?.querySelector('.product-img');
-            
-            if (imgContainer && !imgContainer.querySelector('.alert_tag')) {
-                const badge = document.createElement('span');
-                badge.className = 'alert_tag position-absolute top-0 start-0 translate-middle';
-                badge.style.cssText = 'background-color: #a1dafc; margin-left: 20%; margin-top: 9%; padding: 1px 10px; border-radius: 5px; z-index: 10;';
-                
-                const icon = document.createElement('i');
-                icon.className = 'fa fa-warning text-danger';
-                icon.style.paddingRight = '5px';
-                
-                badge.appendChild(icon);
-                badge.appendChild(document.createTextNode(product.alert_tag));
-                
-                imgContainer.appendChild(badge);
-                
-                console.log("✅ [Alert] Badge agregado a:", product.display_name || product.name, "Stock:", product.qty_available);
-            }
+        // Solo productos almacenables
+        if (!imgContainer || product.is_storable === false) {
+            return;
         }
+        
+        // Evitar duplicados
+        if (imgContainer.querySelector('.stock_badge')) {
+            return;
+        }
+        
+        const qty = product.qty_available || 0;
+        const badge = document.createElement('span');
+        badge.className = 'stock_badge position-absolute top-0 start-0 translate-middle';
+        badge.style.cssText = 'margin-left: 20%; margin-top: 9%; padding: 1px 10px; border-radius: 5px; z-index: 10;';
+        
+        const icon = document.createElement('i');
+        icon.className = 'fa';
+        icon.style.paddingRight = '5px';
+        
+        if (product.alert_tag && product.alert_tag !== false) {
+            // Producto con alerta de bajo stock (rojo)
+            badge.style.backgroundColor = '#ffcccc';
+            icon.className += ' fa-warning text-danger';
+            console.log('⚠️ [Alert] Stock bajo:', product.display_name || product.name, 'Stock:', qty);
+        } else {
+            // Producto con stock suficiente (verde)
+            badge.style.backgroundColor = '#ccffcc';
+            icon.className += ' fa-check text-success';
+            console.log('✅ [Stock OK]:', product.display_name || product.name, 'Stock:', qty);
+        }
+        
+        badge.appendChild(icon);
+        badge.appendChild(document.createTextNode(qty.toString()));
+        imgContainer.appendChild(badge);
     }
 });
 
