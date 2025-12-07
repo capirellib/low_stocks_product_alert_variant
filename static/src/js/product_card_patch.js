@@ -162,10 +162,8 @@ patch(ProductCard.prototype, {
         badge.className = 'stock_badge position-absolute';
         badge.style.cssText = 'bottom: 5px; left: 5px; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
         
-        // Asegurar que el contenedor tenga position relative pero NO cambiar overflow
-        if (!container.style.position || container.style.position === 'static') {
-            container.style.position = 'relative';
-        }
+        // NO modificar el contenedor para no afectar otros elementos como el botón "i"
+        // El badge ya tiene position-absolute, no necesita que el padre sea relative
         
         const icon = document.createElement('i');
         icon.className = 'fa fa-check-circle';
