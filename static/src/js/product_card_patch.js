@@ -69,36 +69,38 @@ patch(ProductCard.prototype, {
         if (product.is_storable === false) {
             return;
         }
+
+        // Solo actualizar si las variantes se muestran como productos independientes
+        const config = this.pos?.config;
+        if (!config?.show_variants_as_products) {
+            return;
+        }
         
         const rootEl = this.el || this.__owl__?.bdom?.el;
         if (!rootEl) return;
         
+        const availableQty = this.getAvailableStock();
+        const hasAlert = availableQty <= 0 || product.alert_tag;
+        
         const badge = rootEl.querySelector('.stock_badge');
-        if (!badge) {
+        
+        // Si ahora tiene alerta, eliminar nuestro badge (el módulo padre lo mostrará)
+        if (hasAlert && badge) {
+            badge.remove();
+            return;
+        }
+        
+        // Si no tiene alerta pero no existe badge, crearlo
+        if (!hasAlert && !badge) {
             this.addAlertBadge();
             return;
         }
         
-        const availableQty = this.getAvailableStock();
-        const qtyText = badge.querySelector('.qty-text');
-        
-        if (qtyText) {
-            qtyText.textContent = availableQty.toString();
-        }
-        
-        // Actualizar color del badge según el stock disponible
-        const hasAlert = availableQty <= 0 || product.alert_tag;
-        if (hasAlert && !badge.classList.contains('alert-danger')) {
-            badge.style.backgroundColor = '#dc3545';
-            const icon = badge.querySelector('i');
-            if (icon) {
-                icon.className = 'fa fa-exclamation-triangle';
-            }
-        } else if (!hasAlert && !badge.classList.contains('alert-success')) {
-            badge.style.backgroundColor = '#28a745';
-            const icon = badge.querySelector('i');
-            if (icon) {
-                icon.className = 'fa fa-check-circle';
+        // Si no tiene alerta y existe badge, actualizar la cantidad
+        if (!hasAlert && badge) {
+            const qtyText = badge.querySelector('.qty-text');
+            if (qtyText) {
+                qtyText.textContent = availableQty.toString();
             }
         }
     },
@@ -108,6 +110,13 @@ patch(ProductCard.prototype, {
         
         // Solo productos almacenables
         if (product.is_storable === false) {
+            return;
+        }
+
+        // Solo mostrar si las variantes se muestran como productos independientes
+        const config = this.pos?.config;
+        if (!config?.show_variants_as_products) {
+            // Si no está activo, dejar que el módulo padre maneje las alertas
             return;
         }
         
@@ -139,11 +148,25 @@ patch(ProductCard.prototype, {
         if (container.querySelector('.stock_badge')) {
             return;
         }
+
+        // Ocultar el badge original del módulo padre si existe
+        const originalBadge = container.querySelector('.position-absolute.top-0.start-0');
+        if (originalBadge) {
+            originalBadge.style.display = 'none';
+        }
         
         const availableQty = this.getAvailableStock();
+        
+        // Solo mostrar badge si NO hay alerta (stock suficiente)
+        // Si hay alerta, el módulo padre ya lo muestra
+        if (product.alert_tag && product.alert_tag !== false || availableQty <= 0) {
+            console.log('⚠️ [Alert] Producto con alerta, dejando que módulo padre lo maneje:', product.display_name || product.name);
+            return;
+        }
+
         const badge = document.createElement('span');
         badge.className = 'stock_badge position-absolute';
-        badge.style.cssText = 'top: 5px; left: 5px; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
+        badge.style.cssText = 'bottom: 5px; left: 5px; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
         
         // Asegurar que el contenedor tenga position relative pero NO cambiar overflow
         if (!container.style.position || container.style.position === 'static') {
@@ -151,24 +174,14 @@ patch(ProductCard.prototype, {
         }
         
         const icon = document.createElement('i');
-        icon.className = 'fa';
+        icon.className = 'fa fa-check-circle';
         icon.style.paddingRight = '3px';
         
-        if (product.alert_tag && product.alert_tag !== false || availableQty <= 0) {
-            // Producto con alerta de bajo stock (rojo)
-            badge.style.backgroundColor = '#dc3545';
-            badge.style.color = '#fff';
-            badge.classList.add('alert-danger');
-            icon.className += ' fa-exclamation-triangle';
-            console.log('⚠️ [Alert] Badge agregado:', product.display_name || product.name, 'Stock disponible:', availableQty);
-        } else {
-            // Producto con stock suficiente (verde)
-            badge.style.backgroundColor = '#28a745';
-            badge.style.color = '#fff';
-            badge.classList.add('alert-success');
-            icon.className += ' fa-check-circle';
-            console.log('✅ [Stock OK] Badge agregado:', product.display_name || product.name, 'Stock disponible:', availableQty);
-        }
+        // Producto con stock suficiente (verde)
+        badge.style.backgroundColor = '#28a745';
+        badge.style.color = '#fff';
+        badge.classList.add('alert-success');
+        console.log('✅ [Stock OK] Badge agregado:', product.display_name || product.name, 'Stock disponible:', availableQty);
         
         badge.appendChild(icon);
         
