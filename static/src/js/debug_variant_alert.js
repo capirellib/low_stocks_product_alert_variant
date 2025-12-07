@@ -5,8 +5,7 @@ import { ProductCard } from "@point_of_sale/app/generic_components/product_card/
 
 console.log("🔥 [low_stocks_product_alert_variant] debug_variant_alert.js cargado");
 
-// Debug deshabilitado - descomentar para debug
-/*
+// Debug ACTIVO para verificar
 patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
@@ -24,4 +23,3 @@ patch(ProductCard.prototype, {
         }
     }
 });
-*/
