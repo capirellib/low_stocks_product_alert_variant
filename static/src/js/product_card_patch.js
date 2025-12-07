@@ -25,8 +25,9 @@ patch(ProductCard.prototype, {
                 this.addAlertBadge();
                 
                 // Escuchar cambios en el carrito
-                if (this.pos.get_order()) {
-                    this.pos.get_order().orderlines.on('add remove change', null, this._updateBadgeListener);
+                const order = this.pos?.get_order?.();
+                if (order && order.orderlines) {
+                    order.orderlines.on('add remove change', null, this._updateBadgeListener);
                 }
             }, 0);
         });
@@ -39,8 +40,9 @@ patch(ProductCard.prototype, {
         
         onWillUnmount(() => {
             // Limpiar el listener
-            if (this.pos.get_order()) {
-                this.pos.get_order().orderlines.off('add remove change', null, this._updateBadgeListener);
+            const order = this.pos?.get_order?.();
+            if (order && order.orderlines) {
+                order.orderlines.off('add remove change', null, this._updateBadgeListener);
             }
         });
     },
@@ -50,9 +52,9 @@ patch(ProductCard.prototype, {
         let availableQty = product.qty_available || 0;
         
         // Restar la cantidad en el carrito actual
-        const order = this.pos.get_order();
-        if (order) {
-            const qtyInCart = order.orderlines.reduce((total, line) => {
+        const order = this.pos?.get_order?.();
+        if (order && order.orderlines && order.orderlines.models) {
+            const qtyInCart = order.orderlines.models.reduce((total, line) => {
                 return line.product.id === product.id ? total + line.quantity : total;
             }, 0);
             availableQty -= qtyInCart;
