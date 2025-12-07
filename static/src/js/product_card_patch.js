@@ -2,19 +2,15 @@
 
 import { patch } from "@web/core/utils/patch";
 import { ProductCard } from "@point_of_sale/app/generic_components/product_card/product_card";
-import { onMounted, onPatched } from "@odoo/owl";
+import { onPatched, useRef } from "@odoo/owl";
 
 console.log("🔥 [low_stocks_product_alert_variant] product_card_patch.js cargado");
 
 patch(ProductCard.prototype, {
     setup() {
         super.setup(...arguments);
+        this.root = useRef("root");
         console.log("🔧 [Stock Badge] Setup ejecutado para producto:", this.props.product?.name);
-        
-        onMounted(() => {
-            console.log("🎯 [Stock Badge] onMounted - producto:", this.props.product?.name);
-            this.addAlertBadge();
-        });
         
         onPatched(() => {
             console.log("🔄 [Stock Badge] onPatched - producto:", this.props.product?.name);
@@ -30,27 +26,27 @@ patch(ProductCard.prototype, {
             return;
         }
         
-        // Debug: Ver estructura del elemento
-        if (!this.el) {
-            console.error('❌ [Stock Badge] this.el es null/undefined para:', product.display_name || product.name);
+        // Usar this.root.el en lugar de this.el
+        const rootEl = this.root?.el || this.el;
+        
+        if (!rootEl) {
+            console.warn('❌ [Stock Badge] No hay elemento raíz para:', product.display_name || product.name);
             return;
         }
         
-        console.log('🔍 [DOM Debug] Elemento raíz:', this.el);
-        console.log('🔍 [DOM Debug] Classes:', this.el.className);
-        console.log('🔍 [DOM Debug] HTML:', this.el.outerHTML.substring(0, 200));
+        console.log('🔍 [DOM Debug] Elemento encontrado para:', product.display_name || product.name);
         
-        // Buscar el contenedor - puede ser .product-img, .product-card o el elemento raíz mismo
-        let container = this.el.querySelector('.product-img');
-        if (!container) container = this.el.querySelector('.product-card');
-        if (!container) container = this.el.querySelector('img')?.parentElement;
-        if (!container && this.el.classList.contains('product-card')) {
-            container = this.el;
+        // Buscar el contenedor
+        let container = rootEl.querySelector('.product-img');
+        if (!container) container = rootEl.querySelector('.product-card');
+        if (!container) container = rootEl.querySelector('img')?.parentElement;
+        if (!container && rootEl.classList.contains('product-card')) {
+            container = rootEl;
         }
+        if (!container) container = rootEl; // Usar el elemento raíz como último recurso
         
         if (!container) {
             console.warn('❌ [Stock Badge] No se encontró contenedor para:', product.display_name || product.name);
-            console.warn('   Selectores probados: .product-img, .product-card, img parent, this.el con clase product-card');
             return;
         }
         
@@ -65,9 +61,7 @@ patch(ProductCard.prototype, {
         badge.style.cssText = 'margin-left: 20%; margin-top: 9%; padding: 1px 10px; border-radius: 5px; z-index: 10; font-size: 0.75rem;';
         
         // Asegurar que el contenedor tenga position relative
-        if (container !== this.el.querySelector('.product-img')) {
-            container.style.position = 'relative';
-        }
+        container.style.position = 'relative';
         
         const icon = document.createElement('i');
         icon.className = 'fa';
