@@ -160,7 +160,8 @@ patch(ProductCard.prototype, {
 
         const badge = document.createElement('span');
         badge.className = 'stock_badge position-absolute';
-        badge.style.cssText = 'bottom: 5px; left: 5px; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
+        // Usar la misma posición que el badge de alerta: top-0 start-0 translate-middle
+        badge.style.cssText = 'top: 0; left: 0; transform: translate(-50%, -50%); margin-left: 20%; margin-top: 9%; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
         
         // NO modificar el contenedor para no afectar otros elementos como el botón "i"
         // El badge ya tiene position-absolute, no necesita que el padre sea relative
