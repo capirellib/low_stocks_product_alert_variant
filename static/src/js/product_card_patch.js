@@ -30,13 +30,27 @@ patch(ProductCard.prototype, {
             return;
         }
         
-        // Buscar el contenedor - puede ser .product-img o .product-card
-        const imgContainer = this.el?.querySelector('.product-img');
-        const cardContainer = this.el?.querySelector('.product-card');
-        const container = imgContainer || cardContainer;
+        // Debug: Ver estructura del elemento
+        if (!this.el) {
+            console.error('❌ [Stock Badge] this.el es null/undefined para:', product.display_name || product.name);
+            return;
+        }
+        
+        console.log('🔍 [DOM Debug] Elemento raíz:', this.el);
+        console.log('🔍 [DOM Debug] Classes:', this.el.className);
+        console.log('🔍 [DOM Debug] HTML:', this.el.outerHTML.substring(0, 200));
+        
+        // Buscar el contenedor - puede ser .product-img, .product-card o el elemento raíz mismo
+        let container = this.el.querySelector('.product-img');
+        if (!container) container = this.el.querySelector('.product-card');
+        if (!container) container = this.el.querySelector('img')?.parentElement;
+        if (!container && this.el.classList.contains('product-card')) {
+            container = this.el;
+        }
         
         if (!container) {
             console.warn('❌ [Stock Badge] No se encontró contenedor para:', product.display_name || product.name);
+            console.warn('   Selectores probados: .product-img, .product-card, img parent, this.el con clase product-card');
             return;
         }
         
@@ -51,7 +65,7 @@ patch(ProductCard.prototype, {
         badge.style.cssText = 'margin-left: 20%; margin-top: 9%; padding: 1px 10px; border-radius: 5px; z-index: 10; font-size: 0.75rem;';
         
         // Asegurar que el contenedor tenga position relative
-        if (!imgContainer) {
+        if (container !== this.el.querySelector('.product-img')) {
             container.style.position = 'relative';
         }
         
