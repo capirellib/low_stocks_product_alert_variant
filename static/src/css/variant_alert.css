@@ -23,4 +23,47 @@
 /* Badge de stock en la parte inferior izquierda */
 .stock_badge {
     pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+/* Animación cuando disminuye el stock (se agrega al carrito) */
+@keyframes badgeDecrease {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    25% { transform: translate(-50%, -50%) scale(1.2); }
+    50% { transform: translate(-50%, -50%) scale(0.9); }
+    75% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.stock_badge.badge-decrease {
+    animation: badgeDecrease 0.5s ease;
+}
+
+/* Animación cuando aumenta el stock (se quita del carrito) */
+@keyframes badgeIncrease {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.15); }
+}
+
+.stock_badge.badge-increase {
+    animation: badgeIncrease 0.5s ease;
+}
+
+/* Animación cuando se elimina el badge */
+@keyframes badgeRemove {
+    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+}
+
+.stock_badge.badge-removing {
+    animation: badgeRemove 0.3s ease forwards;
+}
+
+/* Pulso suave para badges con stock bajo */
+@keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.stock_badge.alert-warning {
+    animation: badgePulse 2s ease-in-out infinite;
 }

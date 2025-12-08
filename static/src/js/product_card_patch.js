@@ -5,12 +5,8 @@ import { ProductCard } from "@point_of_sale/app/generic_components/product_card/
 import { onMounted, onWillUnmount } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
 
-console.log("🔥 [low_stocks_product_alert_variant] product_card_patch.js cargado");
-
-// Clave para localStorage
 const CART_STORAGE_KEY = 'pos_variant_cart_quantities';
 
-// Obtener cantidades del carrito desde localStorage
 function getCartQuantities() {
     try {
         const data = localStorage.getItem(CART_STORAGE_KEY);
@@ -20,7 +16,6 @@ function getCartQuantities() {
     }
 }
 
-// Guardar cantidades en localStorage y notificar
 function saveCartQuantities(quantities) {
     try {
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(quantities));
@@ -35,20 +30,78 @@ patch(ProductCard.prototype, {
         super.setup(...arguments);
         this.pos = useService("pos");
         
-        // Listener para actualizar badge cuando cambia el carrito
-        this._cartUpdateListener = () => {
-            this.updateBadgeStock();
+        this._lastQtyInCart = undefined;
+        this._pollInterval = null;
+        
+        this._cartUpdateListener = (event) => {
+            const productId = this.props.product?.id;
+            const changedProducts = event.detail?.changedProducts || [];
+            
+            if (changedProducts.length === 0 || changedProducts.includes(productId)) {
+                this.updateBadgeStock(true);
+            }
+        };
+        
+        this._productsReloadedListener = (event) => {
+            const productId = this.props.product?.id;
+            const reloadedProductIds = event.detail?.productIds || [];
+            const products = event.detail?.products || [];
+            
+            if (reloadedProductIds.includes(productId)) {
+                console.log('🔄 [BADGE] Recargando badge para:', this.props.product?.display_name);
+                
+                // Actualizar datos del producto en memoria con los datos del evento
+                const productData = products.find(p => p.id === productId);
+                if (productData) {
+                    this.props.product.qty_available = productData.qty_available;
+                    this.props.product.alert_tag = productData.alert_tag;
+                    console.log('✅ [BADGE] Stock actualizado:', productData.qty_available);
+                }
+                
+                const rootEl = this.el || this.__owl__?.bdom?.el;
+                if (rootEl) {
+                    const oldBadge = rootEl.querySelector('.stock_badge');
+                    if (oldBadge) {
+                        oldBadge.remove();
+                    }
+                }
+                
+                setTimeout(() => this.addAlertBadge(), 100);
+            }
+        };
+        
+        this._checkCartChanges = () => {
+            const order = this.pos?.get_order?.();
+            if (!order) return;
+            
+            const product = this.props.product;
+            if (!product) return;
+            
+            const lines = order.get_orderlines();
+            const productLine = lines.find(l => l.product_id?.id === product.id);
+            const currentQtyInCart = productLine ? productLine.get_quantity() : 0;
+            
+            if (this._lastQtyInCart !== undefined && this._lastQtyInCart !== currentQtyInCart) {
+                this.updateBadgeStock(true);
+            }
+            
+            this._lastQtyInCart = currentQtyInCart;
         };
         
         onMounted(() => {
             setTimeout(() => this.addAlertBadge(), 0);
-            
-            // Escuchar cambios en el carrito
             window.addEventListener('pos_cart_updated', this._cartUpdateListener);
+            window.addEventListener('pos_products_reloaded', this._productsReloadedListener);
+            this._pollInterval = setInterval(() => this._checkCartChanges(), 500);
         });
         
         onWillUnmount(() => {
             window.removeEventListener('pos_cart_updated', this._cartUpdateListener);
+            window.removeEventListener('pos_products_reloaded', this._productsReloadedListener);
+            
+            if (this._pollInterval) {
+                clearInterval(this._pollInterval);
+            }
         });
     },
     
@@ -56,133 +109,131 @@ patch(ProductCard.prototype, {
         const product = this.props.product;
         let availableQty = product.qty_available || 0;
         
-        // Restar cantidad en el carrito desde localStorage
-        const cartQuantities = getCartQuantities();
-        const qtyInCart = cartQuantities[product.id] || 0;
-        availableQty -= qtyInCart;
+        const order = this.pos?.get_order?.();
+        if (order) {
+            const lines = order.get_orderlines();
+            const productLine = lines.find(l => l.product_id?.id === product.id);
+            const qtyInCart = productLine ? productLine.get_quantity() : 0;
+            availableQty -= qtyInCart;
+        }
         
         return availableQty;
     },
     
-    updateBadgeStock() {
+    updateBadgeStock(animated = false) {
         const product = this.props.product;
-        
-        // Salir rápidamente si no es almacenable
-        if (product.is_storable === false) {
-            return;
-        }
+        if (product.is_storable === false) return;
 
-        // Solo actualizar si las variantes se muestran como productos independientes
         const config = this.pos?.config;
-        if (!config?.show_variants_as_products) {
-            return;
-        }
+        if (!config?.show_variants_as_products) return;
         
         const rootEl = this.el || this.__owl__?.bdom?.el;
-        if (!rootEl) {
-            return;
-        }
+        if (!rootEl) return;
         
         const availableQty = this.getAvailableStock();
         const hasAlert = availableQty <= 0 || product.alert_tag;
         
         const badge = rootEl.querySelector('.stock_badge');
         
-        // Si ahora tiene alerta, eliminar nuestro badge (el módulo padre lo mostrará)
         if (hasAlert && badge) {
-            badge.remove();
+            if (animated) {
+                badge.classList.add('badge-removing');
+                setTimeout(() => badge.remove(), 300);
+            } else {
+                badge.remove();
+            }
             return;
         }
         
-        // Si no tiene alerta pero no existe badge, crearlo
         if (!hasAlert && !badge) {
             this.addAlertBadge();
             return;
         }
         
-        // Si no tiene alerta y existe badge, actualizar solo si cambió
         if (!hasAlert && badge) {
             const qtyText = badge.querySelector('.qty-text');
             if (qtyText) {
-                const newQtyStr = availableQty.toString();
-                if (qtyText.textContent !== newQtyStr) {
-                    qtyText.textContent = newQtyStr;
-                    console.log('✅ [Badge Update]', product.display_name, '→', newQtyStr);
+                const oldQty = parseInt(qtyText.textContent) || 0;
+                const newQty = availableQty;
+                
+                if (oldQty !== newQty) {
+                    qtyText.textContent = newQty.toString();
+                    
+                    if (animated) {
+                        if (newQty < oldQty) {
+                            badge.classList.add('badge-decrease');
+                            setTimeout(() => badge.classList.remove('badge-decrease'), 500);
+                        } else {
+                            badge.classList.add('badge-increase');
+                            setTimeout(() => badge.classList.remove('badge-increase'), 500);
+                        }
+                    }
+                    
+                    this.updateBadgeColor(badge, newQty);
                 }
             }
+        }
+    },
+    
+    updateBadgeColor(badge, qty) {
+        badge.classList.remove('alert-success', 'alert-warning', 'alert-danger');
+        
+        const minStock = 5;
+        
+        if (qty <= 0) {
+            badge.style.backgroundColor = '#dc3545';
+            badge.style.color = '#fff';
+            badge.classList.add('alert-danger');
+        } else if (qty <= minStock * 1.5) {
+            badge.style.backgroundColor = '#ffc107';
+            badge.style.color = '#000';
+            badge.classList.add('alert-warning');
+        } else {
+            badge.style.backgroundColor = '#28a745';
+            badge.style.color = '#fff';
+            badge.classList.add('alert-success');
         }
     },
     
     addAlertBadge() {
         const product = this.props.product;
         
-        // Solo productos almacenables
-        if (product.is_storable === false) {
-            return;
-        }
+        if (product.is_storable === false) return;
 
-        // Solo mostrar si las variantes se muestran como productos independientes
         const config = this.pos?.config;
-        if (!config?.show_variants_as_products) {
-            // Si no está activo, dejar que el módulo padre maneje las alertas
-            return;
-        }
+        if (!config?.show_variants_as_products) return;
         
-        // Intentar obtener el elemento de varias formas
         const rootEl = this.el || this.__owl__?.bdom?.el || document.querySelector(`[data-product-id="${product.id}"]`);
         
-        if (!rootEl) {
-            console.warn('❌ [Stock Badge] No hay elemento raíz para:', product.display_name || product.name);
-            return;
-        }
+        if (!rootEl) return;
         
-        console.log('🔍 [DOM Debug] Elemento encontrado para:', product.display_name || product.name);
-        
-        // Buscar el contenedor
         let container = rootEl.querySelector?.('.product-img');
         if (!container) container = rootEl.querySelector?.('.product-card');
         if (!container) container = rootEl.querySelector?.('img')?.parentElement;
         if (!container && rootEl.classList?.contains('product-card')) {
             container = rootEl;
         }
-        if (!container) container = rootEl; // Usar el elemento raíz como último recurso
+        if (!container) container = rootEl;
         
-        if (!container) {
-            console.warn('❌ [Stock Badge] No se encontró contenedor para:', product.display_name || product.name);
-            return;
-        }
+        if (!container) return;
         
-        // Evitar duplicados
-        if (container.querySelector('.stock_badge')) {
-            return;
-        }
+        if (container.querySelector('.stock_badge')) return;
         
         const availableQty = this.getAvailableStock();
         
-        // Solo mostrar badge si NO hay alerta (stock suficiente)
-        // Si hay alerta, el módulo padre ya lo muestra
         if (product.alert_tag && product.alert_tag !== false || availableQty <= 0) {
-            console.log('⚠️ [Alert] Producto con alerta, dejando que módulo padre lo maneje:', product.display_name || product.name);
             return;
         }
 
         const badge = document.createElement('span');
         badge.className = 'stock_badge position-absolute';
-        // Usar la misma posición que el badge de alerta: top-0 start-0 translate-middle
         badge.style.cssText = 'top: 0; left: 0; transform: translate(-50%, -50%); margin-left: 20%; margin-top: 9%; padding: 2px 8px; border-radius: 12px; z-index: 3; font-size: 0.7rem; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.3);';
-        
-        // NO modificar el contenedor para no afectar otros elementos como el botón "i"
-        // El badge ya tiene position-absolute, no necesita que el padre sea relative
         
         const icon = document.createElement('i');
         icon.className = 'fa fa-check-circle';
         icon.style.paddingRight = '3px';
         
-        // Producto con stock suficiente (verde)
-        badge.style.backgroundColor = '#28a745';
-        badge.style.color = '#fff';
-        badge.classList.add('alert-success');
-        console.log('✅ [Stock OK] Badge agregado:', product.display_name || product.name, 'Stock disponible:', availableQty);
+        this.updateBadgeColor(badge, availableQty);
         
         badge.appendChild(icon);
         
@@ -195,4 +246,3 @@ patch(ProductCard.prototype, {
     }
 });
 
-console.log("✅ [low_stocks_product_alert_variant] ProductCard patch aplicado");
