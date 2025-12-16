@@ -1,24 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Hereda de low_stocks_product_alert para extender funcionalidad a 
-         variantes. El campo alert_tag ya existe y se hereda del módulo base
-         Este módulo solo asegura que funcione correctamente para variantes 
-         individuales -->
-    
-    <!-- Vista tree para product.product - mostrar alert_tag heredado -->
-    <record id="view_product_product_tree_inherit_variant_alert" 
-            model="ir.ui.view">
-        <field name="name">product.product.tree.variant.alert</field>
+    <!-- Vista form para product.product con campo alert_tag -->
+    <record id="product_normal_form_view" model="ir.ui.view">
+        <field name="name">
+            product.product.view.form.inherit.low.stocks.variant.alert
+        </field>
         <field name="model">product.product</field>
-        <field name="inherit_id" 
-               ref="low_stocks_product_alert.product_product_tree_view"/>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
         <field name="arch" type="xml">
-            <!-- El alert_tag ya está definido en el módulo base
-                 Solo nos aseguramos que sea visible en variantes -->
-            <xpath expr="//field[@name='alert_tag']" position="attributes">
-                <attribute name="column_invisible">False</attribute>
-            </xpath>
+            <field name="pos_categ_ids" position="after">
+                <field name="alert_tag"/>
+            </field>
         </field>
     </record>
 
+    <!-- Vista tree para product.product con alertas -->
+    <record id="product_product_tree_view" model="ir.ui.view">
+        <field name="name">
+            product.product.view.tree.inherit.low.stocks.variant.alert
+        </field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="alert_state" column_invisible="True"/>
+                <field name="alert_tag" column_invisible="True"/>
+            </xpath>
+            <list position="attributes">
+                <attribute name="decoration-danger">alert_state == True</attribute>
+            </list>
+        </field>
+    </record>
 </odoo>

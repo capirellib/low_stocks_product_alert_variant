@@ -20,48 +20,57 @@
 #
 #############################################################################
 {
-    "name": "Product Low Stock Alert - Variant Support",
-    "version": "18.0.1.0.0",
+    "name": "Product Low Stock Alert - Complete",
+    "version": "18.0.2.0.0",
     "category": "Warehouse,Point of Sale",
-    "summary": """Extiende Product Low Stock Alert para mostrar alertas
-    por variantes individuales en el POS""",
+    "summary": """Sistema completo de alertas de stock bajo para productos
+    y variantes en POS y vistas backend""",
     "description": """
-    Módulo que extiende low_stocks_product_alert para:
-    - Mostrar alertas de stock bajo por variante individual
-    - Funciona SOLO cuando las variantes se muestran como productos
-      independientes (pos_product_variants_extended activo)
-    - Usa el mismo campo alert_tag del módulo base
-    - Calcula stock individualmente por variante en lugar de por template
+    Módulo unificado de alertas de stock bajo que incluye:
+    - Alertas de stock bajo por template y por variantes individuales
+    - Visualización en POS con badges de stock
+    - Alertas visuales en vistas kanban y tree del backend
+    - Configuración de umbral mínimo de stock
+    - Soporte para variantes cuando pos_product_variants_extended está activo
     - Compatible con la arquitectura OWL de Odoo 18
 
     Características técnicas:
-    * Override del método _compute_alert_tag() de product.product
-    * Verifica configuración de pos_product_variants_extended
-    * Hereda visualización del módulo base low_stocks_product_alert
-    * Sin campos adicionales, usa infraestructura existente
+    * Campos computados alert_tag y alert_state en product.product y product.template
+    * Configuración global en Settings > Inventory
+    * Detección automática de modo variantes/templates
+    * Visualización con colores y badges en POS
+    * Sin necesidad de módulos adicionales (excepto pos_product_variants_extended 
+      si se desea trabajar con variantes individuales)
+    
+    Funcionalidad unificada:
+    - Incluye toda la funcionalidad del módulo base low_stocks_product_alert
+    - Extiende con soporte completo para variantes individuales
+    - No requiere instalación de módulos adicionales de terceros
     """,
     "author": "Betta ERP - Corrientes, Argentina",
     "company": "Betta ERP",
     "maintainer": "Betta ERP",
     "website": "https://bettaerp.com",
     "depends": [
-        "low_stocks_product_alert",
-        "pos_product_variants_extended",
         "product",
         "point_of_sale",
         "stock",
     ],
     "data": [
+        "views/res_config_settings_views.xml",
         "views/product_product_views.xml",
+        "views/product_template_views.xml",
     ],
     "assets": {
+        "web.assets_backend": [
+            "low_stocks_product_alert_variant/static/src/css/variant_alert.css",
+        ],
         "point_of_sale._assets_pos": [
-            # XML deshabilitado - interfiere con botón info
-            # "low_stocks_product_alert_variant/static/src/xml/product_item_variant.xml",  # noqa: E501
-            "low_stocks_product_alert_variant/static/src/css/variant_alert.css",  # noqa: E501
-            "low_stocks_product_alert_variant/static/src/js/order_patch.js",  # noqa: E501
-            "low_stocks_product_alert_variant/static/src/js/product_card_patch.js",  # noqa: E501
-            "low_stocks_product_alert_variant/static/src/js/payment_screen_patch.js",  # noqa: E501
+            "low_stocks_product_alert_variant/static/src/xml/product_item_variant.xml",
+            "low_stocks_product_alert_variant/static/src/css/variant_alert.css",
+            "low_stocks_product_alert_variant/static/src/js/order_patch.js",
+            "low_stocks_product_alert_variant/static/src/js/product_card_patch.js",
+            "low_stocks_product_alert_variant/static/src/js/payment_screen_patch.js",
         ],
     },
     "images": ["static/description/icon.png"],

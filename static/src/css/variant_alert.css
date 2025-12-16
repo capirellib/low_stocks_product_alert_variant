@@ -1,7 +1,19 @@
-/* Low Stock Alert - Variant Support
-   Hereda los estilos del módulo base low_stocks_product_alert
-   Solo aplica cuando las variantes se muestran como productos 
-   independientes */
+/* Low Stock Alert - Unified Module
+   Incluye estilos base y de variantes
+   Funciona para templates y variantes individuales */
+
+/* ===== ESTILOS BASE (de low_stocks_product_alert) ===== */
+
+/* Color de fondo para productos con stock bajo en vistas tree/list */
+.text-danger td {
+    background-color: rgba(253, 198, 198, 0.39);
+}
+
+.d-color {
+    background-color: red !important;
+}
+
+/* ===== ESTILOS PARA VARIANTES ===== */
 
 /* Asegurar que el nombre del producto siempre sea visible */
 .product-card .product-name,

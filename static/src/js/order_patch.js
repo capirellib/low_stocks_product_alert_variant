@@ -1,103 +1,114 @@
 /** @odoo-module **/
 
-import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { patch } from "@web/core/utils/patch";
+import { PosStore } from "@point_of_sale/app/store/pos_store";
 
-console.log("🔥 [low_stocks_product_alert_variant] order_patch.js cargado");
+console.log("🛒 [Stock Alert] order_patch.js cargando...");
 
-const CART_STORAGE_KEY = 'pos_variant_cart_quantities';
+// Estado global para rastrear el carrito
+let lastCartState = null;
+let cartMonitorInterval = null;
 
-// Actualizar localStorage con todas las cantidades del carrito
-function updateCartStorage(pos, changedProductId = null) {
-    console.log('📦 [Cart Update] updateCartStorage() llamado');
-    console.log('📦 [Cart Update] POS:', pos);
-    console.log('📦 [Cart Update] Changed Product ID:', changedProductId);
-    
-    if (!pos) {
-        console.warn('⚠️ [Cart Storage] No hay POS activo');
-        return;
-    }
-    
-    const order = pos.get_order();
-    if (!order) {
-        console.warn('⚠️ [Cart Storage] No hay orden activa');
-        return;
-    }
-    
-    const lines = order.get_orderlines();
-    console.log('📦 [Cart Update] Total líneas en orden:', lines.length);
-    
-    const quantities = {};
-    const allProductIds = new Set();
-    
-    for (const line of lines) {
-        const productId = line.product.id;
-        const qty = line.get_quantity();
-        
-        console.log(`📦 [Cart Update] Línea: producto ${productId}, cantidad ${qty}`);
-        
-        if (productId) {
-            quantities[productId] = (quantities[productId] || 0) + qty;
-            allProductIds.add(productId);
-        }
-    }
-    
-    // Agregar producto que cambió (por si fue eliminado)
-    if (changedProductId) {
-        allProductIds.add(changedProductId);
-    }
-    
+// Función para obtener el estado actual del carrito
+function getCartState(pos) {
     try {
-        console.log('💾 [Cart Update] Guardando en localStorage:', quantities);
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(quantities));
-        console.log('💾 [Cart Update] localStorage guardado exitosamente');
+        const order = pos?.get_order?.();
+        if (!order) return null;
         
-        console.log('📡 [Cart Update] Emitiendo evento pos_cart_updated');
-        window.dispatchEvent(new CustomEvent('pos_cart_updated', { 
-            detail: {
-                quantities,
-                changedProducts: Array.from(allProductIds)
-            }
+        const lines = order.get_orderlines?.() || [];
+        return lines.map(line => ({
+            id: line.product?.id || line.product_id,
+            qty: line.get_quantity?.() || line.quantity || line.qty || 0
         }));
-        console.log('✅ [Cart Storage] Actualizado:', quantities, 'Productos afectados:', Array.from(allProductIds));
-    } catch (e) {
-        console.error('❌ [Cart Storage] Error guardando carrito:', e);
+    } catch (error) {
+        return null;
     }
 }
 
-// Patch del ProductScreen para interceptar cuando se agrega un producto
-patch(ProductScreen.prototype, {
-    async _onClickProduct(clickEvent) {
-        console.log('🛒 [ProductScreen Patch] _onClickProduct interceptado');
-        console.log('🛒 [ProductScreen Patch] Evento:', clickEvent);
-        
-        // Llamar al método original
-        await super._onClickProduct(...arguments);
-        
-        // Obtener el producto del evento
-        const product = clickEvent.detail;
-        console.log('🛒 [ProductScreen Patch] Producto clickeado:', product?.id, product?.display_name);
-        
-        // Actualizar el carrito
-        if (product?.id) {
-            setTimeout(() => {
-                console.log('🛒 [ProductScreen Patch] Actualizando carrito para producto:', product.id);
-                updateCartStorage(this.pos, product.id);
-            }, 100); // Pequeño delay para que se agregue la línea
+// Función para comparar estados del carrito
+function hasCartChanged(oldState, newState) {
+    if (!oldState && newState) return true;
+    if (oldState && !newState) return true;
+    if (!oldState && !newState) return false;
+    
+    if (oldState.length !== newState.length) return true;
+    
+    for (let i = 0; i < newState.length; i++) {
+        const oldLine = oldState.find(l => l.id === newState[i].id);
+        if (!oldLine || oldLine.qty !== newState[i].qty) {
+            return true;
         }
+    }
+    
+    return false;
+}
+
+// Función para disparar actualización
+function triggerCartUpdate() {
+    const event = new CustomEvent('pos_cart_updated', {
+        detail: { timestamp: Date.now() }
+    });
+    window.dispatchEvent(event);
+    console.log("🔔 [Stock Alert] Evento pos_cart_updated disparado");
+}
+
+// Monitor activo del carrito
+function startCartMonitor(pos) {
+    if (cartMonitorInterval) {
+        clearInterval(cartMonitorInterval);
+    }
+    
+    console.log("👀 [Stock Alert] Monitor de carrito iniciado");
+    
+    cartMonitorInterval = setInterval(() => {
+        const currentState = getCartState(pos);
+        
+        if (hasCartChanged(lastCartState, currentState)) {
+            console.log("🔍 [Stock Alert] Cambio detectado en el carrito");
+            lastCartState = currentState;
+            triggerCartUpdate();
+        }
+    }, 500); // Verificar cada 500ms
+}
+
+// Patchear PosStore
+patch(PosStore.prototype, {
+    async setup() {
+        await super.setup(...arguments);
+        
+        // Iniciar monitor después de que el POS esté listo
+        setTimeout(() => {
+            startCartMonitor(this);
+        }, 1000);
     },
     
-    async _setValue(val) {
-        console.log('🔢 [ProductScreen Patch] _setValue interceptado:', val);
-        await super._setValue(...arguments);
+    async addProductToCurrentOrder(product, options = {}) {
+        console.log("🛒 [Stock Alert] PosStore.addProductToCurrentOrder - Producto:", product?.display_name || product?.name);
         
-        // Actualizar carrito cuando cambia cantidad
+        const result = await super.addProductToCurrentOrder(product, options);
+        
+        // Forzar actualización inmediata
         setTimeout(() => {
-            console.log('🔢 [ProductScreen Patch] Actualizando carrito después de cambiar valor');
-            updateCartStorage(this.pos, null);
+            lastCartState = getCartState(this);
+            triggerCartUpdate();
         }, 100);
+        
+        return result;
     },
+    
+    async removeOrderline(orderline) {
+        console.log("🛒 [Stock Alert] PosStore.removeOrderline");
+        
+        const result = await super.removeOrderline?.(orderline);
+        
+        // Forzar actualización inmediata
+        setTimeout(() => {
+            lastCartState = getCartState(this);
+            triggerCartUpdate();
+        }, 100);
+        
+        return result;
+    }
 });
 
-console.log("✅ [low_stocks_product_alert_variant] ProductScreen patch aplicado");
-
+console.log("✅ [Stock Alert] PosStore patch aplicado correctamente");
